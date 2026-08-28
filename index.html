@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026级教材汇总工具</title>
+<style>
+:root{
+  --accent:#3b5bdb; --accent-2:#2f3f8f; --accent-soft:#eef1fe;
+  --border:#e3e6ef; --bg:#f4f5fa; --card:#ffffff;
+  --text:#1c2333; --muted:#6b7280; --ok:#16a34a; --warn:#d97706;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:"Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+  background:var(--bg); color:var(--text); font-size:14px;
+}
+header{
+  padding:16px 24px; color:#fff;
+  background:linear-gradient(135deg,var(--accent-2),var(--accent));
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+header h1{margin:0; font-size:19px; font-weight:700}
+header .sub{font-size:12px; opacity:.85; margin-left:auto}
+.wrap{display:grid; grid-template-columns:400px 1fr; gap:16px; padding:16px; align-items:start}
+@media(max-width:980px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px; box-shadow:0 1px 3px rgba(20,30,60,.05)}
+.card h2{margin:0 0 10px; font-size:15px; color:var(--accent-2)}
+.sel-panel{position:sticky; top:16px}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+.btn{
+  border:1px solid var(--border); background:#fff; color:var(--text);
+  padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; transition:.15s;
+}
+.btn:hover{border-color:var(--accent); color:var(--accent)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+.btn.primary:hover{background:var(--accent-2)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.search{width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; margin-bottom:10px}
+.search:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
+.major-list{max-height:52vh; overflow:auto; border:1px solid var(--border); border-radius:8px}
+.major-row{
+  display:flex; align-items:center; gap:8px; padding:7px 10px; cursor:pointer;
+  border-bottom:1px solid #f0f1f6; transition:background .12s;
+}
+.major-row:last-child{border-bottom:none}
+.major-row:hover{background:var(--accent-soft)}
+.major-row input[type=checkbox]{width:16px; height:16px; accent-color:var(--accent); cursor:pointer; flex:none}
+.m-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.badge{
+  font-size:11px; color:var(--muted); background:#f0f1f6; border-radius:20px; padding:2px 8px; flex:none;
+}
+.qty{
+  width:62px; padding:4px 6px; border:1px solid var(--border); border-radius:6px;
+  font-size:13px; text-align:center; flex:none;
+}
+.qty:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
+.qty:disabled{background:#f4f5f8}
+.stat-line{font-size:12px; color:var(--muted); margin:8px 2px 0; line-height:1.7}
+.stat-line b{color:var(--accent)}
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0}
+.summary-cards{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px}
+@media(max-width:640px){.summary-cards{grid-template-columns:repeat(2,1fr)}}
+.s-card{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px}
+.s-card .v{font-size:22px; font-weight:700; color:var(--accent)}
+.s-card .k{font-size:12px; color:var(--muted); margin-top:2px}
+.table-box{overflow:auto; max-height:65vh; border:1px solid var(--border); border-radius:10px}
+table{border-collapse:collapse; width:100%; font-size:13px; min-width:900px}
+thead th{
+  position:sticky; top:0; background:#f0f2f9; z-index:2; text-align:left;
+  padding:9px 10px; font-weight:600; color:var(--accent-2); border-bottom:1px solid var(--border); white-space:nowrap;
+}
+tbody td{padding:8px 10px; border-bottom:1px solid #f0f1f6; vertical-align:top}
+tbody tr:nth-child(even){background:#fafbfe}
+tbody tr:hover{background:var(--accent-soft)}
+td.num,th.num{text-align:center; white-space:nowrap}
+.t-total{font-weight:700; color:var(--accent)}
+.remark{font-size:11px; color:var(--warn); white-space:nowrap}
+.major-detail{width:100%; border:1px solid var(--border); border-radius:10px; margin-top:10px; overflow:hidden}
+.major-detail summary{
+  cursor:pointer; padding:10px 14px; background:#f0f2f9; font-weight:600; color:var(--accent-2);
+  display:flex; gap:10px; align-items:center; font-size:13px;
+}
+.major-detail summary .d-badge{margin-left:auto; font-weight:400; color:var(--muted); font-size:12px}
+.major-detail .inner{padding:10px 14px; overflow:auto}
+.major-detail table{min-width:700px}
+.empty{color:var(--muted); text-align:center; padding:40px 0}
+.hint{font-size:12px; color:var(--muted); margin-top:10px; line-height:1.8}
+footer{padding:14px 24px; color:var(--muted); font-size:12px; border-top:1px solid var(--border); margin-top:8px}
+@media print{
+  .sel-panel, .actions, header .sub, .btn, footer, .search, .toolbar, .major-detail summary{display:none !important}
+  body{background:#fff}
+  .wrap{display:block; padding:0}
+  .card{border:none; box-shadow:none; padding:0}
+  .table-box{max-height:none; border:none}
+  .major-detail{page-break-inside:avoid}
+  .major-detail .inner{display:block !important}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📚 2026级教材汇总工具</h1>
+  <span class="sub">数据来源：教材目录.xls（仅 2026 级 · 2026-2027 第1学期）</span>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ 左侧：专业选择 ============ -->
+  <div class="card sel-panel">
+    <h2>① 勾选专业与数量</h2>
+    <div class="toolbar">
+      <button class="btn" id="btnAll">全选</button>
+      <button class="btn" id="btnNone">清空</button>
+      <button class="btn" id="btnInvert">反选</button>
+    </div>
+    <input class="search" id="search" type="text" placeholder="🔍 搜索专业…">
+    <div class="major-list" id="majorList"></div>
+    <div class="stat-line" id="statLine">尚未选择专业</div>
+  </div>
+
+  <!-- ============ 右侧：汇总结果 ============ -->
+  <div class="card">
+    <h2>② 生成汇总</h2>
+    <div class="actions">
+      <button class="btn primary" id="btnGen">生成汇总表</button>
+      <button class="btn" id="btnCsv" disabled>导出 CSV</button>
+      <button class="btn" id="btnPrint" disabled>打印</button>
+    </div>
+    <div id="result">
+      <div class="empty">👈 在左侧勾选专业（数量默认=班级数，可改），然后点「生成汇总表」</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  提示：每个专业一栏「数量」，指该专业每本教材需要多少册，默认等于班级数（每班 1 套）；同名教材跨专业自动合并统计。页面可离线使用，导出 CSV 可用 Excel 直接打开。
+</footer>
+
+<script>
+const MAJORS = {"books":[{"key":"I9787544683647","name":"“传播中国”大学英语进阶教程（上册）","author":"胡开宝","pub":"上海外语教育出版社","isbn":"9787544683647","remark":"","courses":["大学英语（1）"]},{"key":"I9787040671490","name":"中国古代史（第三版）（上册）","author":"赵毅 赵轶峰","pub":"高等教育出版社","isbn":"9787040671490","remark":"","courses":["中国古代史"]},{"key":"I9787040667233","name":"中国古代史（第三版）（下册）","author":"赵毅 赵轶峰","pub":"高等教育出版社","isbn":"9787040667233","remark":"","courses":["中国古代史"]},{"key":"I9787313066985","name":"中外建筑简史","author":"杨  远","pub":"上海交通大学出版社","isbn":"9787313066985","remark":"","courses":["建筑设计史"]},{"key":"I9787531857587","name":"中外艺术设计史","author":"李午兴","pub":"黑龙江美术出版社","isbn":"9787531857587","remark":"","courses":["中外设计艺术史"]},{"key":"I9787522926148","name":"中西服装史","author":"华梅","pub":"中国纺织出版社","isbn":"9787522926148","remark":"","courses":["中外服装史"]},{"key":"I9787115659071","name":"人体绘画精讲解剖+速写+动态+动漫","author":"刘庆行","pub":"人民邮电出版社","isbn":"9787115659071","remark":"","courses":["设计素描"]},{"key":"I9787111787099","name":"人力资源管理导论","author":"郑晓明","pub":"机械工业出版社","isbn":"9787111787099","remark":"","courses":["人力资源管理专业导论"]},{"key":"I9787040627756","name":"休闲体育概论","author":"李相如","pub":"高等教育出版社","isbn":"9787040627756","remark":"","courses":["休闲体育概论"]},{"key":"I9787568056991","name":"会展概论","author":"王晓辉，鲁力","pub":"华中科技大学出版社","isbn":"9787568056991","remark":"","courses":["会展概论"]},{"key":"I9787115628312","name":"体能训练","author":"曹景伟","pub":"人民邮电出版社","isbn":"9787115628312","remark":"","courses":["体能训练专业导论"]},{"key":"I9787040639582","name":"供应链管理基础与前沿","author":"邱玉琢","pub":"高等教育出版社","isbn":"9787040639582","remark":"","courses":["供应链管理专业认知"]},{"key":"I9787302460459","name":"信息管理与信息系统专业导论教程","author":"张士玉","pub":"清华大学出版社","isbn":"9787302460459","remark":"","courses":["信息管理与信息系统专业导论"]},{"key":"I9787544675031","name":"全新版大学英语视听说教程1 学生用书","author":"王敏华等","pub":"上海外语教育出版社","isbn":"9787544675031","remark":"","courses":["大学英语（1）"]},{"key":"I9787117366106","name":"养老服务管理学","author":"乔学斌","pub":"人民卫生出版社","isbn":"9787117366106","remark":"","courses":["养老服务专业导论"]},{"key":"I9787040316230","name":"古代汉语（第二版）上册、下册","author":"易国杰，黎千驹","pub":"高等教育出版社","isbn":"9787040316230","remark":"下册 ISBN：9787040316223","courses":["古代汉语（上）"]},{"key":"I9787302681274","name":"商务礼仪（第3版）","author":"徐辉 李长华 马骏 宋婷婷","pub":"清华大学出版社","isbn":"9787302681274","remark":"","courses":["社交礼仪与个人形象设计"]},{"key":"I9787576059045","name":"器械健身指导","author":"窦正毅 孙秋芬 俞玲","pub":"华东师范大学出版社","isbn":"9787576059045","remark":"","courses":["健身运动","力量训练原理与方法"]},{"key":"I9787565452314","name":"基础会计","author":"陈国辉","pub":"东北财经大学出版社","isbn":"9787565452314","remark":"","courses":["会计学专业导论","会计学原理"]},{"key":"I9787115639257","name":"多媒体技术及应用案例教程（第3版 微课版）","author":"李建芳","pub":"人民邮电出版社","isbn":"9787115639257","remark":"","courses":["计算机多媒体技术应用"]},{"key":"I9787568576229","name":"大学公共体育俱乐部教程","author":"杨成、刘圆芳","pub":"大连理工出版社","isbn":"9787568576229","remark":"","courses":["体育俱乐部（1）"]},{"key":"I9787513048750","name":"大学生军事理论教程","author":"李印福 王强","pub":"知识产权出版社","isbn":"9787513048750","remark":"","courses":["军事理论"]},{"key":"I9787115673145","name":"大学生心理健康教育（慕课版 双色版 第4版）","author":"方晓义，夏翠翠","pub":"人民邮电出版社","isbn":"9787115673145","remark":"","courses":["大学生心理健康教育"]},{"key":"I9787569078817","name":"大学英语四级考试教程（第三版）","author":"文举、张婷等","pub":"四川大学出版社","isbn":"9787569078817","remark":"","courses":["大学英语（1）"]},{"key":"I9787302682257","name":"大数据管理导论","author":"刘平","pub":"清华大学出版社","isbn":"9787302682257","remark":"","courses":["大数据管理与应用专业导论"]},{"key":"I9787559109415","name":"完美配色----源自时尚、艺术与风格","author":"(美)劳伦·韦杰著","pub":"辽宁科学技术出版社","isbn":"9787559109415","remark":"","courses":["服装色彩"]},{"key":"I9787550452855","name":"审计学","author":"黄良杰、肖瑞利、崔海红","pub":"西南财经大学出版社","isbn":"9787550452855","remark":"二十一世纪“双一流”建设系列精品教材","courses":["审计学专业导论"]},{"key":"I9787516541005","name":"工业设计史（第二版）","author":"刘闻名，王秀丹","pub":"航空工业出版社","isbn":"9787516541005","remark":"","courses":["产品设计专业导论"]},{"key":"I9787111662235","name":"工程造价专业导论","author":"李海凌","pub":"机械工业出版社","isbn":"9787111662235","remark":"","courses":["工程造价专业导论"]},{"key":"I9787300323473","name":"市场营销学通论（第 10 版·数字教材版）","author":"郭国庆","pub":"中国人民大学出版社","isbn":"9787300323473","remark":"教师均为成都校区老师，教材希望能送到成都校区","courses":["市场营销专业导论"]},{"key":"I9787568532556","name":"应用型大学英语·综合教程 基础篇1（第五版）","author":"任嫣","pub":"大连理工出版社","isbn":"9787568532556","remark":"","courses":["实用大学英语（1）"]},{"key":"I9787568537919","name":"应用型大学英语·视听说教程 基础篇1（第五版）","author":"左小霞","pub":"大连理工出版社","isbn":"9787568537919","remark":"","courses":["实用大学英语（1）"]},{"key":"I9787568520867","name":"应用型大学英语同步拓展训练教程 基础篇1","author":"潘秀梅","pub":"大连理工出版社","isbn":"9787568520867","remark":"","courses":["实用大学英语（1）"]},{"key":"I9787040599022","name":"思想道德与法治（2023年版）","author":"本书编写组","pub":"高等教育出版社","isbn":"9787040599022","remark":"马工程教材","courses":["思想道德与法治"]},{"key":"I9787040646689","name":"户外运动基础教程","author":"鹿志海、钱俊伟、徐鹏等","pub":"高等教育出版社","isbn":"9787040646689","remark":"","courses":["户外运动"]},{"key":"I9787115414618","name":"摄影与摄像基础教程（第2版）","author":"余武","pub":"人民邮电出版社","isbn":"9787115414618","remark":"","courses":["摄影与摄像基础"]},{"key":"I9787580209467","name":"数字图形图像处理基础教程(PS+AI)","author":"兰珂、黄晓瑜、冯田","pub":"江西美术出版社（百佳社）","isbn":"9787580209467","remark":"","courses":["图形图像处理"]},{"key":"I9787115645753","name":"数字媒体技术导论（微课版）","author":"陈洁 李珊","pub":"人民邮电出版社","isbn":"9787115645753","remark":"","courses":["数字媒体技术专业认知"]},{"key":"I9787313342249","name":"数字媒体艺术概论","author":"黄莓子、李钰、汪大伟","pub":"上海交通大学出版社","isbn":"9787313342249","remark":"","courses":["数字媒体艺术专业导论"]},{"key":"I9787503273162","name":"文化产业管理概论","author":"杨柳","pub":"中国旅游出版社","isbn":"9787503273162","remark":"","courses":["文化产业管理概论"]},{"key":"I9787207135544","name":"文学专业新生入门导引","author":"张春梅","pub":"黑龙江人民出版社","isbn":"9787207135544","remark":"","courses":["应用中文专业导论"]},{"key":"I9787544672139","name":"新世纪高等院校英语专业本科生系列教材（修订版）：口语教程 基础口语","author":"何宁, 王守仁, 俞希, 编","pub":"上海外语教育出版社","isbn":"9787544672139","remark":"","courses":["英语口语Ⅰ"]},{"key":"I9787544680233","name":"新世纪高等院校英语专业本科生系列教材（修订版）：听力教程1（第3版）学生用书","author":"施心远, 主编","pub":"上海外语教育出版社","isbn":"9787544680233","remark":"","courses":["听力Ⅰ"]},{"key":"I9787544671965","name":"新世纪高等院校英语专业本科生系列教材（修订版）：新编英语语法教程（第6版）学生用书","author":"章振邦","pub":"上海外语教育出版社","isbn":"9787544671965","remark":"","courses":["英语语法"]},{"key":"I9787111791058","name":"新型建筑材料","author":"何伟  宋少民","pub":"机械工业出版社","isbn":"9787111791058","remark":"","courses":["建筑材料"]},{"key":"I9787544677790","name":"新思路英语专业系列教材：综合教程 1 学生用书","author":"査明建, 许立冰, 高健,","pub":"上海外语教育出版社","isbn":"9787544677790","remark":"","courses":["综合英语Ⅰ"]},{"key":"I9787521343083","name":"新视野大学英语（第四版）读写教程1（思政智慧版）","author":"郑树棠","pub":"外语教学与研究出版社","isbn":"9787521343083","remark":"","courses":["大学英语（1）"]},{"key":"I9787550458871","name":"旅游学概论","author":"贾荣；王毓梅","pub":"西南财经大学出版社","isbn":"9787550458871","remark":"","courses":["旅游学概论"]},{"key":"I9787568081030","name":"旅游学概论（马勇）第二版","author":"马勇 邓爱民 任斐","pub":"华中科技大学出版社","isbn":"9787568081030","remark":"","courses":["旅游学概论"]},{"key":"I9771674678260","name":"时事报告（大学生版）","author":"何成","pub":"中共中央宣传部时事报告杂志社","isbn":"9771674678260","remark":"","courses":["形势与政策（1）"]},{"key":"I9787548764526","name":"正常人体结构与功能","author":"马丽华，姜涌，聂雪丽","pub":"中南大学出版社","isbn":"9787548764526","remark":"","courses":["人体结构与功能"]},{"key":"I9787522901176","name":"烹饪原料学","author":"赵廉、李春梅","pub":"中国纺织出版社","isbn":"9787522901176","remark":"","courses":["烹饪原料学"]},{"key":"I9787112313631","name":"物业管理专业导论（第二版）","author":"王雪彦，张志红","pub":"中国建筑工业出版社","isbn":"9787112313631","remark":"教师用书送到成都校区","courses":["物业管理专业导论"]},{"key":"I9787313073884","name":"环境艺术概论","author":"陈  健","pub":"上海交通大学出版社","isbn":"9787313073884","remark":"","courses":["环境设计专业导论"]},{"key":"I9787576030242","name":"环境艺术设计制图","author":"何  丽","pub":"华东师范大学出版社","isbn":"9787576030242","remark":"","courses":["设计制图"]},{"key":"I9787518447930","name":"现代物流概论","author":"任美霞、王玉方","pub":"中国轻工业出版社","isbn":"9787518447930","remark":"","courses":["物流行业认知"]},{"key":"I9787562497714","name":"现代酒店服务意识(第2版)","author":"韦明体 周令芳","pub":"重庆大学出版社","isbn":"9787562497714","remark":"","courses":["酒店服务认知与体验"]},{"key":"I9787576021134","name":"田径运动","author":"李兴华　罗建达　潘聚仟","pub":"华东师范大学出版社","isbn":"9787576021134","remark":"","courses":["田径运动"]},{"key":"I9787313331373","name":"研学旅游概论","author":"齐兰兰","pub":"上海交通大学出版社","isbn":"9787313331373","remark":"","courses":["研学旅游概论"]},{"key":"I9787040635881","name":"管理学（第二版）","author":"陈传明、徐向艺、赵丽芬","pub":"高等教育出版社","isbn":"9787040635881","remark":"马工程教材","courses":["管理学"]},{"key":"I9787564414092","name":"网球运动教程","author":"网球运动教程 编写组","pub":"北京体育大学出版社","isbn":"9787564414092","remark":"","courses":["网球运动"]},{"key":"I9787115631534","name":"网络新媒体导论","author":"喻国明","pub":"人民邮电出版社","isbn":"9787115631534","remark":"","courses":["网络与新媒体专业导论"]},{"key":"I9787302657231","name":"羽毛球运动教学与训练选修教程","author":"朱建国","pub":"清华大学出版社","isbn":"9787302657231","remark":"","courses":["羽毛球运动"]},{"key":"I9787516236024","name":"职引未来：大学生职业生涯规划指导与实践","author":"任荣伟，钟一彪","pub":"中国出版集团、中国民主法制出版社","isbn":"9787516236024","remark":"","courses":["大学生职业生涯规划"]},{"key":"I9787567540972","name":"英语听力入门3000 修订版 学生用书1","author":"徐卫列","pub":"华东师范大学出版社","isbn":"9787567540972","remark":"","courses":["听力Ⅰ"]},{"key":"I9787040581690","name":"英语语音教程（第三版）","author":"王桂珍","pub":"高等教育出版社","isbn":"9787040581690","remark":"","courses":["实用英语语音","英语语音"]},{"key":"I9787115621061","name":"计算思维与计算机导论","author":"宁爱军","pub":"人民邮电出版社","isbn":"9787115621061","remark":"","courses":["大学计算思维基础"]},{"key":"I9787569720204","name":"设计基础与实践","author":"顾佳","pub":"西南大学出版社","isbn":"9787569720204","remark":"","courses":["构成基础"]},{"key":"I9787102082929","name":"设计学概论","author":"尹定邦","pub":"人民美术出版社","isbn":"9787102082929","remark":"","courses":["服装与服饰设计专业导论"]},{"key":"I9787571020040","name":"设计学概论","author":"尹定邦","pub":"湖南科学技术出版社","isbn":"9787571020040","remark":"","courses":["视觉传达设计专业导论"]},{"key":"I9787572625930","name":"设计素描","author":"顾振雷、黎凤林、夏长春","pub":"湖南文艺出版社","isbn":"9787572625930","remark":"","courses":["设计素描"]},{"key":"I9787300327990","name":"财务管理学","author":"王化成、刘俊彦、廖冠民","pub":"中国人民大学出版社","isbn":"9787300327990","remark":"“十二五”国家级规划教材","courses":["财务管理专业导论"]},{"key":"I9787040419221","name":"运动解剖学","author":"李世昌","pub":"高等教育出版社","isbn":"9787040419221","remark":"","courses":["运动解剖学"]},{"key":"I讲义","name":"银杏文化概论（讲义）","author":"周铁山","pub":"讲义","isbn":"讲义","remark":"","courses":["银杏文化概论"]},{"key":"I9787544678292","name":"阅读教程(第3版)(1)(学生用书)","author":"蒋静仪、巫喜丽","pub":"上海外语教育出版社","isbn":"9787544678292","remark":"","courses":["英语阅读Ⅰ","阅读Ⅰ"]},{"key":"I9787516537541","name":"高等数学习题集（上册）（双色）","author":"高敏、康丽坤","pub":"航空工业出版社","isbn":"9787516537541","remark":"","courses":["经济数学（1）"]},{"key":"I9787516537572","name":"高等数学习题集（下册）（双色）","author":"刘瑞娟","pub":"航空工业出版社","isbn":"9787516537572","remark":"","courses":["经济数学（1）"]},{"key":"I9787115588487","name":"高等数学练习册（上册)","author":"张天德","pub":"人民邮电出版社","isbn":"9787115588487","remark":"","courses":["高等数学（1）"]},{"key":"I9787115591098","name":"高等数学练习册（下册）","author":"张天德","pub":"人民邮电出版社","isbn":"9787115591098","remark":"","courses":["高等数学（1）"]},{"key":"I9787115621030","name":"高等数学（上册）（慕课版 第2版）","author":"张天德 王鹏辉 王玮","pub":"人民邮电出版社","isbn":"9787115621030","remark":"","courses":["高等数学（1）"]},{"key":"I9787115621597","name":"高等数学（下册）（慕课版 第2版）","author":"张天德 王鹏辉 王玮","pub":"人民邮电出版社","isbn":"9787115621597","remark":"","courses":["高等数学（1）"]},{"key":"I9787313287557","name":"高等数学（经管类）上册（双色）（含微课）","author":"李伟、王爱平、郭永江","pub":"上海交通大学出版社","isbn":"9787313287557","remark":"","courses":["经济数学（1）"]},{"key":"I9787313284938","name":"高等数学（经管类）下册（双色）（含微课）","author":"李伟、王爱平、郭永江","pub":"上海交通大学出版社","isbn":"9787313284938","remark":"","courses":["经济数学（1）"]}],"majors":{"财务管理（本）":{"classes":5,"books":["I9771674678260","I9787040599022","I9787115621061","I9787115673145","I9787300327990","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787565452314","I9787568576229","I9787569078817"]},"产品设计（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787115673145","I9787513048750","I9787516236024","I9787516541005","I9787531857587","I9787562497714","I9787568520867","I9787568532556","I9787568537919","I9787568576229","I9787569720204","I9787572625930"]},"大数据管理与应用（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787040635881","I9787115588487","I9787115591098","I9787115621030","I9787115621061","I9787115621597","I9787302682257","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787568576229","I9787569078817"]},"电子商务（本）":{"classes":1,"books":["I9771674678260","I9787040599022","I9787040635881","I9787115621061","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787568576229","I9787569078817"]},"服装与服饰设计（本）":{"classes":1,"books":["I9771674678260","I9787040599022","I9787102082929","I9787115659071","I9787115673145","I9787513048750","I9787516236024","I9787522926148","I9787559109415","I9787562497714","I9787568520867","I9787568532556","I9787568537919","I9787568576229","I讲义"]},"工程造价（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787040635881","I9787111662235","I9787111791058","I9787115588487","I9787115591098","I9787115621030","I9787115621597","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568576229","I9787569078817"]},"供应链管理（本）":{"classes":1,"books":["I9771674678260","I9787040599022","I9787040635881","I9787040639582","I9787115588487","I9787115591098","I9787115621030","I9787115621061","I9787115621597","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787568576229","I9787569078817"]},"环境设计（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787115673145","I9787313066985","I9787313073884","I9787513048750","I9787516236024","I9787562497714","I9787568520867","I9787568532556","I9787568537919","I9787568576229","I9787572625930","I9787576030242"]},"会计学（本）":{"classes":7,"books":["I9771674678260","I9787040599022","I9787115621061","I9787115673145","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787565452314","I9787568576229","I9787569078817"]},"会展经济与管理（本）":{"classes":3,"books":["I9771674678260","I9787040599022","I9787040635881","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568056991","I9787568576229","I9787569078817"]},"酒店管理（本）":{"classes":16,"books":["I9771674678260","I9787040599022","I9787115639257","I9787115673145","I9787302681274","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787568081030","I9787568576229","I9787569078817","I讲义"]},"旅游管理（本）":{"classes":5,"books":["I9771674678260","I9787040599022","I9787040635881","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787550458871","I9787562497714","I9787568576229","I9787569078817"]},"旅游管理与服务教育（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787040635881","I9787313284938","I9787313287557","I9787313331373","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568576229","I9787569078817"]},"烹饪与营养教育（本）":{"classes":13,"books":["I9771674678260","I9787040599022","I9787115639257","I9787115673145","I9787513048750","I9787516236024","I9787521343083","I9787522901176","I9787544675031","I9787544683647","I9787568576229","I9787569078817","I讲义"]},"人力资源管理（本）":{"classes":4,"books":["I9771674678260","I9787040599022","I9787040635881","I9787111787099","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568576229","I9787569078817"]},"商务英语（本）":{"classes":1,"books":["I9771674678260","I9787040581690","I9787040599022","I9787115673145","I9787513048750","I9787516236024","I9787544677790","I9787544678292","I9787544680233","I9787567540972","I9787568576229","I讲义"]},"审计学（本）":{"classes":5,"books":["I9771674678260","I9787040599022","I9787115621061","I9787115673145","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787550452855","I9787565452314","I9787568576229","I9787569078817"]},"食品营养与健康（本）":{"classes":3,"books":["I9771674678260","I9787040599022","I9787115639257","I9787115673145","I9787513048750","I9787516236024","I9787521343083","I9787522901176","I9787544675031","I9787544683647","I9787568576229","I9787569078817","I讲义"]},"市场营销（本）":{"classes":4,"books":["I9771674678260","I9787040599022","I9787040635881","I9787300323473","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568576229","I9787569078817"]},"视觉传达设计（本）":{"classes":5,"books":["I9771674678260","I9787040599022","I9787115673145","I9787513048750","I9787516236024","I9787531857587","I9787562497714","I9787568520867","I9787568532556","I9787568537919","I9787568576229","I9787571020040","I9787572625930","I9787580209467"]},"数字媒体技术（本）":{"classes":3,"books":["I9771674678260","I9787040599022","I9787115588487","I9787115591098","I9787115621030","I9787115621061","I9787115621597","I9787115645753","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787568576229","I9787569078817","I讲义"]},"数字媒体艺术（本）":{"classes":5,"books":["I9771674678260","I9787040599022","I9787115673145","I9787313342249","I9787513048750","I9787516236024","I9787531857587","I9787562497714","I9787568520867","I9787568532556","I9787568537919","I9787568576229","I9787569720204","I9787572625930","I讲义"]},"税收学（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787115621061","I9787115673145","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787565452314","I9787568576229","I9787569078817"]},"体能训练（本）":{"classes":5,"books":["I9771674678260","I9787040419221","I9787040599022","I9787115628312","I9787513048750","I9787516236024","I9787562497714","I9787568520867","I9787568532556","I9787568537919","I9787576021134","I9787576059045","I讲义"]},"网络与新媒体（本）":{"classes":3,"books":["I9771674678260","I9787040599022","I9787115414618","I9787115621061","I9787115631534","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787568576229","I9787569078817","I讲义"]},"文化产业管理（本）":{"classes":3,"books":["I9771674678260","I9787040599022","I9787040635881","I9787313284938","I9787313287557","I9787503273162","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568576229","I9787569078817"]},"物流工程（本）":{"classes":1,"books":["I9771674678260","I9787040599022","I9787040635881","I9787115588487","I9787115591098","I9787115621030","I9787115621061","I9787115621597","I9787513048750","I9787516236024","I9787518447930","I9787521343083","I9787544675031","I9787544683647","I9787568576229","I9787569078817"]},"物业管理（本）":{"classes":3,"books":["I9771674678260","I9787040599022","I9787040635881","I9787112313631","I9787313284938","I9787313287557","I9787513048750","I9787516236024","I9787516537541","I9787516537572","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568576229","I9787569078817"]},"信息管理与信息系统（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787040635881","I9787115588487","I9787115591098","I9787115621030","I9787115621061","I9787115621597","I9787302460459","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787568576229","I9787569078817","I讲义"]},"休闲体育（本）":{"classes":5,"books":["I9771674678260","I9787040419221","I9787040599022","I9787040627756","I9787040646689","I9787302657231","I9787513048750","I9787516236024","I9787562497714","I9787564414092","I9787568520867","I9787568532556","I9787568537919","I9787576059045","I讲义"]},"应用中文（本）":{"classes":1,"books":["I9771674678260","I9787040316230","I9787040599022","I9787040667233","I9787040671490","I9787207135544","I9787513048750","I9787516236024","I9787521343083","I9787544675031","I9787544683647","I9787562497714","I9787568576229","I9787569078817"]},"英语（本）":{"classes":5,"books":["I9771674678260","I9787040581690","I9787040599022","I9787115673145","I9787513048750","I9787516236024","I9787544671965","I9787544672139","I9787544677790","I9787544678292","I9787544680233","I9787568576229"]},"养老服务管理（本）":{"classes":2,"books":["I9771674678260","I9787040599022","I9787117366106","I9787513048750","I9787516236024","I9787548764526","I9787562497714","I9787568520867","I9787568532556","I9787568537919","I9787568576229","I讲义"]}}};
+
+const state = {};        // 专业名 -> 数量
+let filter = '';
+let order = [];          // 专业显示顺序（拼音排序）
+for (const m of Object.keys(MAJORS.majors)) state[m] = MAJORS.majors[m].classes;
+order = Object.keys(MAJORS.majors).sort((a,b)=>a.localeCompare(b,'zh-Hans-CN'));
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- 专业列表 ---------- */
+function renderMajors(){
+  const list = $('majorList');
+  const kw = filter.trim();
+  let html = '';
+  let selCount = 0, clsSum = 0, copySum = 0;
+  for (const m of order){
+    const meta = MAJORS.majors[m];
+    const qty = state[m];
+    if (kw && !m.includes(kw)) continue;
+    if (qty > 0) { selCount++; clsSum += meta.classes; copySum += qty * meta.books.length; }
+    html += `<label class="major-row">
+      <input type="checkbox" data-m="${esc(m)}" ${qty>0?'checked':''}>
+      <span class="m-name" title="${esc(m)}">${esc(m)}</span>
+      <span class="badge">${meta.classes}班</span>
+      <input class="qty" type="number" min="0" step="1" value="${qty}" data-m="${esc(m)}" ${qty>0?'':'disabled'}>
+    </label>`;
+  }
+  list.innerHTML = html || '<div class="empty" style="padding:20px">无匹配专业</div>';
+  $('statLine').innerHTML = selCount
+    ? `已选 <b>${selCount}</b> 个专业（<b>${clsSum}</b> 个班），按默认数量预计 <b>${copySum}</b> 册`
+    : '尚未选择专业';
+  $('btnGen').disabled = selCount === 0;
+}
+
+$('majorList').addEventListener('change', e => {
+  const t = e.target;
+  if (t.type === 'checkbox'){
+    const m = t.dataset.m;
+    state[m] = t.checked ? MAJORS.majors[m].classes : 0;
+    renderMajors();
+  } else if (t.classList.contains('qty')){
+    const m = t.dataset.m;
+    state[m] = Math.max(0, parseInt(t.value) || 0);
+    renderMajors();
+  }
+});
+$('search').addEventListener('input', e => { filter = e.target.value; renderMajors(); });
+$('btnAll').onclick = () => { for (const m of order) state[m] = MAJORS.majors[m].classes; renderMajors(); };
+$('btnNone').onclick = () => { for (const m of order) state[m] = 0; renderMajors(); };
+$('btnInvert').onclick = () => { for (const m of order) state[m] = state[m] > 0 ? 0 : MAJORS.majors[m].classes; renderMajors(); };
+
+/* ---------- 汇总 ---------- */
+function buildSummary(){
+  const sel = order.filter(m => state[m] > 0);
+  if (!sel.length) return null;
+  const bookMap = new Map();   // key -> 合并条目
+  for (const m of sel){
+    const meta = MAJORS.majors[m];
+    const qty = state[m];
+    for (const key of meta.books){
+      let b = bookMap.get(key);
+      if (!b){
+        const src = MAJORS.books.find(x => x.key === key);
+        b = { ...src, majors: [], total: 0 };
+        bookMap.set(key, b);
+      }
+      b.majors.push({m, qty});
+      b.total += qty;
+    }
+  }
+  return [...bookMap.values()].sort((a,b)=> b.total - a.total || a.name.localeCompare(b.name,'zh-Hans-CN'));
+}
+
+function renderResult(){
+  const sel = order.filter(m => state[m] > 0);
+  const summary = buildSummary();
+  const box = $('result');
+  const noCsv = sel.length === 0 || !summary;
+  $('btnCsv').disabled = noCsv;
+  $('btnPrint').disabled = noCsv;
+  if (!summary){
+    box.innerHTML = '<div class="empty">👈 在左侧勾选专业，然后点「生成汇总表」</div>';
+    return;
+  }
+  const clsSum = sel.reduce((s,m)=>s+MAJORS.majors[m].classes,0);
+  const copySum = summary.reduce((s,b)=>s+b.total,0);
+
+  // 汇总卡片
+  let html = `<div class="summary-cards">
+    <div class="s-card"><div class="v">${sel.length}</div><div class="k">已选专业</div></div>
+    <div class="s-card"><div class="v">${clsSum}</div><div class="k">涉及班级</div></div>
+    <div class="s-card"><div class="v">${summary.length}</div><div class="k">教材种类</div></div>
+    <div class="s-card"><div class="v">${copySum}</div><div class="k">合计册数</div></div>
+  </div>`;
+
+  // 汇总表
+  html += `<div class="table-box"><table>
+    <thead><tr>
+      <th class="num">#</th><th>教材名称</th><th>作者</th><th>出版社</th><th>ISBN</th>
+      <th>课程</th><th>备注</th><th>专业 × 数量</th><th class="num">合计</th>
+    </tr></thead><tbody>`;
+  summary.forEach((b,i)=>{
+    const detail = b.majors.map(x=>`${esc(x.m)}×${x.qty}`).join('；');
+    html += `<tr>
+      <td class="num">${i+1}</td>
+      <td>${esc(b.name)}</td>
+      <td>${esc(b.author)||'—'}</td>
+      <td>${esc(b.pub)||'—'}</td>
+      <td>${esc(b.isbn)||'—'}</td>
+      <td>${esc(b.courses.join('、'))||'—'}</td>
+      <td class="remark">${esc(b.remark)||''}</td>
+      <td>${detail}</td>
+      <td class="num t-total">${b.total}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  // 分专业明细
+  html += '<div style="margin-top:14px">';
+  sel.forEach(m=>{
+    const meta = MAJORS.majors[m];
+    const qty = state[m];
+    const keys = [...meta.books].sort((a,b)=>{
+      const na = MAJORS.books.find(x=>x.key===a).name, nb = MAJORS.books.find(x=>x.key===b).name;
+      return na.localeCompare(nb,'zh-Hans-CN');
+    });
+    let rows = '';
+    keys.forEach((k,i)=>{
+      const b = MAJORS.books.find(x=>x.key===k);
+      rows += `<tr>
+        <td class="num">${i+1}</td><td>${esc(b.name)}</td>
+        <td>${esc(b.author)||'—'}</td><td>${esc(b.pub)||'—'}</td>
+        <td>${esc(b.isbn)||'—'}</td><td>${esc(b.courses.join('、'))||'—'}</td>
+        <td class="num t-total">${qty}</td>
+      </tr>`;
+    });
+    html += `<details class="major-detail">
+      <summary>${esc(m)}<span class="d-badge">${meta.classes}个班 · ${keys.length}种书 × ${qty}册</span></summary>
+      <div class="inner"><table>
+        <thead><tr><th class="num">#</th><th>教材名称</th><th>作者</th><th>出版社</th><th>ISBN</th><th>课程</th><th class="num">数量</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </details>`;
+  });
+  html += '</div>';
+  box.innerHTML = html;
+}
+
+$('btnGen').onclick = renderResult;
+
+/* ---------- 导出 CSV ---------- */
+$('btnCsv').onclick = () => {
+  const summary = buildSummary();
+  if (!summary) return;
+  const q = s => '"' + String(s ?? '').replace(/"/g,'""') + '"';
+  const lines = [['教材名称','作者','出版社','ISBN','课程','备注','专业×数量','合计册数'].map(q).join(',')];
+  summary.forEach(b=>{
+    lines.push([b.name,b.author,b.pub,b.isbn,b.courses.join('、'),b.remark,
+      b.majors.map(x=>`${x.m}×${x.qty}`).join('；'),b.total].map(q).join(','));
+  });
+  const blob = new Blob(['\ufeff' + lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '2026级教材汇总.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
+$('btnPrint').onclick = () => {
+  document.querySelectorAll('.major-detail').forEach(d=>{ if(!d.open) d.open = true; });
+  window.print();
+};
+
+renderMajors();
+</script>
+</body>
+</html>
